@@ -1,3 +1,3 @@
-const ip = "http://192.168.100.10:5000"; // أو رابط السيرفر لو على شبكة أو على الإنترنت
+const ip = "https://rua-backend-production.up.railway.app";
 
 export default ip;
