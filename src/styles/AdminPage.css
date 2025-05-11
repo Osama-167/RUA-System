@@ -1,0 +1,85 @@
+.admin-container {
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 20px;
+  color: #fff;
+  font-family: "Cairo", sans-serif;
+}
+
+h2, h3 {
+  color: gold;
+  text-align: center;
+}
+
+.admin-form {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+  margin-bottom: 30px;
+}
+
+.admin-form input,
+.admin-form select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: none;
+  border-radius: 6px;
+  background-color: #1e1e1e;
+  color: #fff;
+}
+
+.admin-form button {
+  padding: 10px 20px;
+  background-color: gold;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  color: #000;
+  cursor: pointer;
+  transition: 0.3s ease;
+  width: 100%;
+}
+
+.admin-form button:hover {
+  background-color: #e0c200;
+}
+
+.team-list {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.team-list li {
+  margin-bottom: 10px;
+  list-style: none;
+  padding: 10px;
+  background-color: #222;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fff;
+}
+
+.delete-btn {
+  color: white;
+  background: red;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* 🎯 Responsive */
+@media (max-width: 500px) {
+  .admin-container {
+    padding: 10px;
+  }
+
+  .admin-form button {
+    font-size: 14px;
+  }
+}
