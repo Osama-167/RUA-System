@@ -6,6 +6,7 @@ export default function EmergencyPage() {
   const [taskCount, setTaskCount] = useState(0);
   const [tasks, setTasks] = useState([]);
   const [submitted, setSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(""); 
 
   const team = localStorage.getItem("team");
   const role = localStorage.getItem("role");
@@ -16,7 +17,7 @@ export default function EmergencyPage() {
   };
 
   const handleTaskCountChange = (e) => {
-    const count = parseInt(e.target.value);
+    const count = parseInt(e.target.value) || 0;
     setTaskCount(count);
 
     const initialTasks = Array.from({ length: count }, () => ({
@@ -29,6 +30,7 @@ export default function EmergencyPage() {
 
     setTasks(initialTasks);
     setSubmitted(false);
+    setErrorMsg("");
   };
 
   const handleTaskChange = (index, field, value) => {
@@ -45,12 +47,15 @@ export default function EmergencyPage() {
       return;
     }
 
+    setErrorMsg("");
+    setSubmitted(false);
+
     try {
       for (const task of tasks) {
         const formData = new FormData();
         formData.append("team", team);
         formData.append("role", role);
-        formData.append("taskNumber", task.taskNumber);
+        formData.append("taskNumber", task.taskNumber.trim());
         formData.append("subscriptionNumber", task.subscriptionNumber);
         formData.append("description", task.description);
         formData.append("note", task.note || "");
@@ -62,14 +67,27 @@ export default function EmergencyPage() {
         });
 
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "فشل رفع المهمة");
+
+        if (!response.ok) {
+          // هنا بنفحص حالة الخطأ لو 409 يعني رقم المهمة موجود سابقا
+          if (response.status === 409) {
+            setErrorMsg(`❌ رقم المهمة ${task.taskNumber} موجود بالفعل.`);
+            throw new Error(data.message || "تكرار رقم مهمة");
+          } else {
+            setErrorMsg(data.message || "❌ فشل رفع المهمة");
+            throw new Error(data.message || "فشل رفع المهمة");
+          }
+        }
       }
 
       setSubmitted(true);
       alert("✅ تم إرسال كل المهام بنجاح!");
     } catch (err) {
-      alert("❌ فشل في إرسال المهام");
       console.error(err);
+      // لو في رسالة خطأ خاصة تم عرضها، لا نحتاج alert ثاني
+      if (!errorMsg) {
+        alert("❌ فشل في إرسال المهام");
+      }
     }
   };
 
@@ -77,7 +95,9 @@ export default function EmergencyPage() {
     <div className="emergency-container">
       <div className="header">
         <h2>تسجيل مهام الطوارئ</h2>
-        <button className="logout-btn" onClick={handleLogout}>تسجيل الخروج</button>
+        <button className="logout-btn" onClick={handleLogout}>
+          تسجيل الخروج
+        </button>
       </div>
 
       <div className="task-count">
@@ -99,7 +119,9 @@ export default function EmergencyPage() {
               type="text"
               placeholder="رقم المهمة"
               value={task.taskNumber}
-              onChange={(e) => handleTaskChange(index, "taskNumber", e.target.value)}
+              onChange={(e) =>
+                handleTaskChange(index, "taskNumber", e.target.value)
+              }
               required
             />
 
@@ -107,14 +129,18 @@ export default function EmergencyPage() {
               type="text"
               placeholder="رقم الاشتراك"
               value={task.subscriptionNumber}
-              onChange={(e) => handleTaskChange(index, "subscriptionNumber", e.target.value)}
+              onChange={(e) =>
+                handleTaskChange(index, "subscriptionNumber", e.target.value)
+              }
               required
             />
 
             <textarea
               placeholder="الوصف"
               value={task.description}
-              onChange={(e) => handleTaskChange(index, "description", e.target.value)}
+              onChange={(e) =>
+                handleTaskChange(index, "description", e.target.value)
+              }
               required
             />
 
@@ -122,7 +148,9 @@ export default function EmergencyPage() {
               type="text"
               placeholder="ملاحظة (اختياري)"
               value={task.note}
-              onChange={(e) => handleTaskChange(index, "note", e.target.value)}
+              onChange={(e) =>
+                handleTaskChange(index, "note", e.target.value)
+              }
             />
 
             <input
@@ -141,7 +169,9 @@ export default function EmergencyPage() {
         )}
       </form>
 
-      {submitted && (
+      {errorMsg && <p className="error-msg">{errorMsg}</p>}
+
+      {submitted && !errorMsg && (
         <p className="success-msg">✅ تم إرسال المهام بنجاح!</p>
       )}
     </div>
