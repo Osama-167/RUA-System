@@ -2,33 +2,36 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ip from "./ip";
 import * as XLSX from "xlsx";
-import "../styles/SupervisorPage.css"; // ✅ ربط ملف الستايل
+import "../styles/SupervisorPage.css";
 
 export default function SupervisorPage() {
   const [entries, setEntries] = useState([]);
   const [filteredTeam, setFilteredTeam] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const response = await fetch(`${ip}/api/reports`);
-        const data = await response.json();
-
-        if (response.ok) {
-          setEntries(data);
-        } else {
-          console.error("فشل تحميل التقارير:", data.message);
-        }
-      } catch (error) {
-        console.error("❌ خطأ في الاتصال بالسيرفر:", error);
-      }
-    };
-
     fetchReports();
   }, []);
+
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${ip}/api/reports`);
+      const data = await response.json();
+      if (response.ok) {
+        setEntries(data);
+      } else {
+        console.error("فشل تحميل التقارير:", data.message);
+      }
+    } catch (error) {
+      console.error("❌ خطأ في الاتصال بالسيرفر:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const isWithinDateRange = (entryDate) => {
     if (!fromDate && !toDate) return true;
@@ -75,13 +78,38 @@ export default function SupervisorPage() {
       }
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(formatted, {
-      header: Object.keys(formatted[0]),
-    });
-
+    const worksheet = XLSX.utils.json_to_sheet(formatted);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, type === "emergency" ? "طوارئ" : "صيانة");
     XLSX.writeFile(workbook, `${type}_reports.xlsx`);
+  };
+
+  const deleteReport = async (id) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذا التقرير؟")) return;
+    try {
+      await fetch(`${ip}/api/reports/${id}`, { method: "DELETE" });
+      setEntries(entries.filter((e) => e._id !== id));
+    } catch (err) {
+      alert("حدث خطأ أثناء الحذف");
+    }
+  };
+
+  const deleteByDateRange = async () => {
+    if (!fromDate || !toDate) {
+      alert("يرجى تحديد من و إلى تاريخ أولًا");
+      return;
+    }
+
+    if (!window.confirm(`هل أنت متأكد من حذف جميع التقارير من ${fromDate} إلى ${toDate}؟`)) return;
+
+    try {
+      await fetch(`${ip}/api/reports?from=${fromDate}&to=${toDate}`, {
+        method: "DELETE",
+      });
+      fetchReports(); 
+    } catch (err) {
+      alert("حدث خطأ أثناء الحذف حسب التاريخ");
+    }
   };
 
   const handleLogout = () => {
@@ -99,6 +127,8 @@ export default function SupervisorPage() {
 
       <button className="logout-btn" onClick={handleLogout}>🚪 تسجيل الخروج</button>
 
+      {loading && <p>⏳ جاري تحميل التقارير...</p>}
+
       <div className="filters">
         <label>فرز حسب الفرقة:</label>
         <select onChange={(e) => setFilteredTeam(e.target.value)} value={filteredTeam}>
@@ -114,6 +144,12 @@ export default function SupervisorPage() {
         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
         <label>إلى تاريخ: </label>
         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        <button onClick={deleteByDateRange}>🗑️ حذف حسب التاريخ</button>
+      </div>
+
+      <div className="export-buttons">
+        <button onClick={() => exportToExcel(emergencies, "emergency")}>📥 تحميل تقرير الطوارئ Excel</button>
+        <button onClick={() => exportToExcel(maintenances, "maintenance")}>📥 تحميل تقرير الصيانة Excel</button>
       </div>
 
       <h3>تقارير الطوارئ</h3>
@@ -125,9 +161,10 @@ export default function SupervisorPage() {
           <strong>الوصف:</strong> {entry.description} <br />
           {entry.note && <><strong>ملاحظة:</strong> {entry.note}<br /></>}
           {entry.date && <><strong>التاريخ:</strong> {entry.date}</>}
+          <br />
+          <button onClick={() => deleteReport(entry._id)}>🗑️ حذف</button>
         </div>
       ))}
-      <button onClick={() => exportToExcel(emergencies, "emergency")}>📥 تحميل تقرير الطوارئ Excel</button>
 
       <h3>تقارير الصيانة</h3>
       {maintenances.map((entry, i) => (
@@ -136,9 +173,10 @@ export default function SupervisorPage() {
           <strong>نوع العمل:</strong> {entry.workType} <br />
           {entry.note && <><strong>ملاحظة:</strong> {entry.note}<br /></>}
           {entry.date && <><strong>التاريخ:</strong> {entry.date}</>}
+          <br />
+          <button onClick={() => deleteReport(entry._id)}>🗑️ حذف</button>
         </div>
       ))}
-      <button onClick={() => exportToExcel(maintenances, "maintenance")}>📥 تحميل تقرير الصيانة Excel</button>
     </div>
   );
 }
