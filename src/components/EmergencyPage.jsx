@@ -69,7 +69,6 @@ export default function EmergencyPage() {
         const data = await response.json();
 
         if (!response.ok) {
-          // هنا بنفحص حالة الخطأ لو 409 يعني رقم المهمة موجود سابقا
           if (response.status === 409) {
             setErrorMsg(`❌ رقم المهمة ${task.taskNumber} موجود بالفعل.`);
             throw new Error(data.message || "تكرار رقم مهمة");
@@ -84,7 +83,6 @@ export default function EmergencyPage() {
       alert("✅ تم إرسال كل المهام بنجاح!");
     } catch (err) {
       console.error(err);
-      // لو في رسالة خطأ خاصة تم عرضها، لا نحتاج alert ثاني
       if (!errorMsg) {
         alert("❌ فشل في إرسال المهام");
       }
