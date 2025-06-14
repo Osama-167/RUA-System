@@ -92,7 +92,6 @@ body {
   text-align: center;
 }
 
-/* ✅ استجابة للموبايل */
 @media (max-width: 480px) {
   .brand-text {
     font-size: 24px;
