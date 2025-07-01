@@ -6,6 +6,7 @@ export default function MaintenancePage() {
   const [taskCount, setTaskCount] = useState(0);
   const [tasks, setTasks] = useState([]);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const team = localStorage.getItem("team") || "ميكانيكا";
   const role = localStorage.getItem("role") || "maintenance";
@@ -21,6 +22,8 @@ export default function MaintenancePage() {
       workType: "",
       note: "",
       date: "",
+      subscriptionNumber: "",
+      description: "",
     }));
     setTaskCount(count);
     setTasks(initialTasks);
@@ -36,6 +39,11 @@ export default function MaintenancePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmitted(false);
+
     try {
       for (const task of tasks) {
         const formData = new FormData();
@@ -44,6 +52,18 @@ export default function MaintenancePage() {
         formData.append("workType", task.workType);
         formData.append("note", task.note || "");
         formData.append("date", task.date);
+
+        const taskNumber = role === "maintenance"
+          ? Math.floor(100000 + Math.random() * 900000)
+          : task.taskNumber || "";
+
+        const subscription = role === "maintenance"
+          ? "MNT-" + Math.floor(100000 + Math.random() * 900000)
+          : task.subscriptionNumber || "";
+
+        formData.append("taskNumber", taskNumber);
+        formData.append("subscriptionNumber", subscription);
+        formData.append("description", task.description || "");
 
         const response = await fetch(`${ip}/api/reports/upload`, {
           method: "POST",
@@ -63,6 +83,10 @@ export default function MaintenancePage() {
       alert("❌ فشل في إرسال المهام");
       console.error(err);
     }
+
+    setTimeout(() => {
+      setIsSubmitting(false);
+    }, 10000);
   };
 
   return (
@@ -112,12 +136,34 @@ export default function MaintenancePage() {
               onChange={(e) => handleTaskChange(index, "date", e.target.value)}
               required
             />
+
+            {role !== "maintenance" && (
+              <input
+                type="text"
+                placeholder="رقم الاشتراك"
+                value={task.subscriptionNumber}
+                onChange={(e) => handleTaskChange(index, "subscriptionNumber", e.target.value)}
+                required
+              />
+            )}
+
+            <input
+              type="text"
+              placeholder="وصف المهمة"
+              value={task.description}
+              onChange={(e) => handleTaskChange(index, "description", e.target.value)}
+              required
+            />
           </div>
         ))}
 
         {taskCount > 0 && (
-          <button type="submit" className="submit-btn">
-            إرسال المهام
+          <button
+            type="submit"
+            className="submit-btn"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "⏳ جاري الإرسال..." : "إرسال المهام"}
           </button>
         )}
       </form>
