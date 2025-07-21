@@ -6,7 +6,8 @@ export default function EmergencyPage() {
   const [taskCount, setTaskCount] = useState(0);
   const [tasks, setTasks] = useState([]);
   const [submitted, setSubmitted] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(""); 
+  const [errorMsg, setErrorMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false); 
 
   const team = localStorage.getItem("team");
   const role = localStorage.getItem("role");
@@ -42,10 +43,15 @@ export default function EmergencyPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (isSubmitting) return;
+
     if (!team || !role) {
       alert("❌ لا يمكن إرسال البيانات بدون تسجيل دخول");
       return;
     }
+
+    setIsSubmitting(true);
+    setTimeout(() => setIsSubmitting(false), 10000);
 
     setErrorMsg("");
     setSubmitted(false);
@@ -69,10 +75,7 @@ export default function EmergencyPage() {
         const data = await response.json();
 
         if (!response.ok) {
-          if (response.status === 409) {
-            setErrorMsg(`❌ رقم المهمة ${task.taskNumber} موجود بالفعل.`);
-            throw new Error(data.message || "تكرار رقم مهمة");
-          } else {
+          if (response.status !== 409) {
             setErrorMsg(data.message || "❌ فشل رفع المهمة");
             throw new Error(data.message || "فشل رفع المهمة");
           }
@@ -161,8 +164,8 @@ export default function EmergencyPage() {
         ))}
 
         {taskCount > 0 && (
-          <button type="submit" className="submit-btn">
-            إرسال المهام
+          <button type="submit" className="submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? "جارٍ الإرسال..." : "إرسال المهام"}
           </button>
         )}
       </form>
